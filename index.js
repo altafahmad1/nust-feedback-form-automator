@@ -1,92 +1,114 @@
 #!/usr/bin/env node
-const config = require('config');
-const puppeteer = require('puppeteer');
+import config from 'config';
+import puppeteer from 'puppeteer';
+import chalk from 'chalk';
+import header from './utils/header.js';
+import footer from './utils/footer.js';
+
 const username = config.get('username');
 const password = config.get('password');
-const chalk = require('chalk');
-const header = require('./utils/header');
-const footer = require('./utils/footer');
 
 (async () => {
-  header();
+	const getInputValue = (option) => {
+		switch (option.toLowerCase()) {
+			case 'excellent':
+				return '3539787';
+			case 'v good':
+				return '3539788';
+			case 'good':
+				return '3539789';
+			case 'avg':
+				return '3539790';
+			case 'poor':
+				return '3539791';
+			default:
+				return '3539787';
+		}
+	};
 
-  const getSize = function (obj) {
-    var size = 0,
-      key;
-    for (key in obj) {
-      if (obj.hasOwnProperty(key)) size++;
-    }
-    return size;
-  };
+	header();
 
-  const opt = process.argv[2] || '0';
-  const comments = process.argv[3] || '.';
-  console.log(opt, comments);
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
+	const getSize = function (obj) {
+		var size = 0,
+			key;
+		for (key in obj) {
+			if (obj.hasOwnProperty(key)) size++;
+		}
+		return size;
+	};
 
-  await page.goto('https://qalam.nust.edu.pk/');
+	const opt = process.argv[2] || 'Excellent';
+	const comments = process.argv[3] || 'Satsified.';
+	console.log(`Provided Arguments: option: ${opt}`, `comment: ${comments}`);
+	const browser = await puppeteer.launch();
+	const page = await browser.newPage();
 
-  await page.type('#login', username);
-  await page.type('#password', password);
-  await page.keyboard.press('Enter');
+	await page.goto('https://qalam.nust.edu.pk/');
+	await page.exposeFunction('getInputValueFromParam', getInputValue);
 
-  await page.waitForNavigation();
-  await page.goto('https://qalam.nust.edu.pk/student/qa/feedback');
+	await page.type('#login', username);
+	await page.type('#password', password);
+	await page.keyboard.press('Enter');
 
-  await page.screenshot({ path: `Form.png` });
+	await page.waitForNavigation();
+	await page.goto('https://qalam.nust.edu.pk/student/qa/feedback', {
+		waitUntil: 'load',
+	});
 
-  let forms = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('.md-list-addon-element'), (a) =>
-      a.getAttribute('href')
-    )
-  );
+	await page.screenshot({ path: `Form.png` });
 
-  forms = forms.filter((href) => {
-    if (href !== null && href.substr(0, 13) === '/survey/fill/') {
-      return href;
-    }
-  });
+	let forms = await page.evaluate(() =>
+		Array.from(document.querySelectorAll('.md-list-addon-element'), (a) =>
+			a.getAttribute('href')
+		)
+	);
 
-  //Fill forms
-  for (let i = 0; i < forms.length; i++) {
-    console.log(`Form ${i + 1} of ${forms.length}`);
-    await page.goto(`https://qalam.nust.edu.pk${forms[i]}`);
+	forms = forms.filter((href) => {
+		if (href !== null && href.substring(0, 20) === '/student/evaluation/') {
+			return href;
+		}
+	});
 
-    let options = await page.evaluate(
-      (opt, comments) => {
-        const options = document.querySelectorAll('input[type="radio"]');
-        if (options.length !== 0) {
-          for (let i = parseInt(opt); i < options.length; i = i + 5) {
-            options[i].click();
-          }
+	console.log(forms);
+	//Fill forms
+	for (let i = 0; i < forms.length; i++) {
+		console.log(`Form ${i + 1} of ${forms.length}`);
+		await page.goto(`https://qalam.nust.edu.pk${forms[i]}`, {
+			waitUntil: 'load',
+		});
 
-          let textArea = document.querySelector('textarea');
-          textArea.value = comments;
-        }
-        return options;
-      },
-      opt,
-      comments
-    );
+		let options = await page.evaluate(
+			async (opt, comments) => {
+				const options = document.querySelectorAll('input[type="range"]');
+				if (options.length !== 0) {
+					for (let i = 0; i < options.length; i++) {
+						options[i].value = await window.getInputValueFromParam(opt);
+					}
 
-    if (getSize(options) !== 0) {
-      await page.click('button[name="button_submit"]');
-    }
+					let textArea = document.querySelector('textarea');
+					textArea.value = comments;
+					const submitButton = document.querySelector('button');
+					submitButton.classList.remove('disabled');
+				}
+				return options;
+			},
+			opt,
+			comments
+		);
 
-    // if (optionLength.length !== 0) {
-    //   await page.pdf({ path: `Form ${i + 1}.pdf`, format: 'a4' });
-    // }
-  }
+		if (getSize(options) !== 0) {
+			await page.click('button[type="submit"]');
+		}
+	}
 
-  console.log(
-    '\n',
-    chalk.blue(
-      'nust-feedback-form-automator has filled the feedback forms for you. :)\n'
-    )
-  );
+	console.log(
+		'\n',
+		chalk.blue(
+			'nust-feedback-form-automator has filled the feedback forms for you. :)\n'
+		)
+	);
 
-  await browser.close();
+	await browser.close();
 
-  footer();
+	footer();
 })();
