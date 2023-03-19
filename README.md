@@ -25,12 +25,12 @@ Tools required:
 
 ### Usage
 
-You have the option to select a choice of rating yourself from 0 to 4 in the [option] parameter. In case the parameter is skipped 0 is default. The options 0 to 4 correspond to the following choices:
+You have the option to select a choice of rating in the [option] parameter. In case the parameter is skipped "excellent" is chosen by default answer to all questions. The option parameter can take any of the following values:
 
-- 0: Excellent
-- 1: Very Good
-- 2: Good
-- 3: Fair
-- 4: Poor
+- Excellent
+- V Good
+- Good
+- Avg
+- Poor
 
-You can also choose a comment of yourself regarding all the feedback forms using [comment] parameter. The default is '.'
+You can also choose a comment of yourself regarding all the feedback forms using [comment] parameter. The default is 'Satisfied.'
