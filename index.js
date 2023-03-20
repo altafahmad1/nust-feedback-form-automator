@@ -55,8 +55,6 @@ const password = config.get('password');
 		waitUntil: 'load',
 	});
 
-	await page.screenshot({ path: `Form.png` });
-
 	let forms = await page.evaluate(() =>
 		Array.from(document.querySelectorAll('.md-list-addon-element'), (a) =>
 			a.getAttribute('href')
@@ -69,10 +67,16 @@ const password = config.get('password');
 		}
 	});
 
-	console.log(forms);
+	console.log(
+		chalk.green(
+			`Total ${forms.length} forms found. Please wait while we fill them for you... :)`
+		),
+		'\n'
+	);
+
 	//Fill forms
 	for (let i = 0; i < forms.length; i++) {
-		console.log(`Form ${i + 1} of ${forms.length}`);
+		console.log(`Filled: Form ${i + 1} of ${forms.length}`);
 		await page.goto(`https://qalam.nust.edu.pk${forms[i]}`, {
 			waitUntil: 'load',
 		});
@@ -103,7 +107,7 @@ const password = config.get('password');
 
 	console.log(
 		'\n',
-		chalk.blue(
+		chalk.green(
 			'nust-feedback-form-automator has filled the feedback forms for you. :)\n'
 		)
 	);
